@@ -1,9 +1,10 @@
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template
 from keras.applications.imagenet_utils import preprocess_input
 from keras.models import load_model
 import numpy as np
 import cv2
 import os
+import requests  # Asegúrate de tener esta importación
 
 # Inicializa la app Flask
 app = Flask(__name__)
@@ -25,8 +26,25 @@ names = ['Amazona Alinaranja', 'Amazona de San Vicente', 'Amazona Mercenaria', '
          'Periquito Australiano', 'Periquito Barrado', 'Tiluchí Colilargo', 'Tiluchí de Santander',
          'Tiluchi Lomirrufo']
 
+# Ruta del modelo
+MODEL_PATH = 'modelo/model_VGG16_v4.keras'
+
+def download_model():
+    """Descarga el modelo desde Google Drive si no existe localmente."""
+    if not os.path.exists(MODEL_PATH):
+        url = 'https://drive.google.com/uc?export=download&id=1WEZ60x_yPY-gPv8ugoq_qDLTSAD541zc'
+        print("Descargando modelo...")
+        response = requests.get(url, stream=True)
+        with open(MODEL_PATH, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        print("Modelo descargado exitosamente.")
+
+# Descarga el modelo si es necesario
+download_model()
+
 # Carga el modelo
-model = load_model('modelo/model_VGG16_v4.keras')
+model = load_model(MODEL_PATH)
 
 # Ruta de subida de imágenes
 UPLOAD_FOLDER = 'static'
@@ -65,4 +83,3 @@ def home():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # Usar puerto de Render si está disponible
     app.run(host="0.0.0.0", port=port, debug=True)
-
