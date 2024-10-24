@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template
 from keras.applications.imagenet_utils import preprocess_input
 from keras.models import load_model
 import numpy as np
@@ -9,55 +9,50 @@ import requests
 # Inicializa la app Flask
 app = Flask(__name__)
 
-# Nombre del archivo del modelo
-MODEL_PATH = 'modelo/model_VGG16_v4.keras'
-
 # Lista de nombres de aves
 names = [
-    'Amazona Alinaranja', 'Amazona de San Vicente', 'Amazona Mercenaria', 'Amazona Real',
-    'Aratinga de Pinceles', 'Aratinga de Wagler', 'Aratinga Ojiblanca', 'Aratinga Orejigualda',
-    'Aratinga Pertinaz', 'Batará Barrado', 'Batará Crestibarrado', 'Batara Crestinegro',
-    'Batará Mayor', 'Batará Pizarroso Occidental', 'Batará Unicolor', 'Cacatua Ninfa', 
-    'Catita Frentirrufa', 'Cotorra Colinegra', 'Cotorra Pechiparda', 'Cotorrita Alipinta',
-    'Cotorrita de Anteojos', 'Guacamaya Roja', 'Guacamaya Verde', 'Guacamayo Aliverde',
+    'Amazona Alinaranja', 'Amazona de San Vicente', 'Amazona Mercenaria',
+    'Amazona Real', 'Aratinga de Pinceles', 'Aratinga de Wagler',
+    'Aratinga Ojiblanca', 'Aratinga Orejigualda', 'Aratinga Pertinaz',
+    'Batará Barrado', 'Batará Crestibarrado', 'Batara Crestinegro',
+    'Batará Mayor', 'Batará Pizarroso Occidental', 'Batará Unicolor',
+    'Cacatua Ninfa', 'Catita Frentirrufa', 'Cotorra Colinegra',
+    'Cotorra Pechiparda', 'Cotorrita Alipinta', 'Cotorrita de Anteojos',
+    'Guacamaya Roja', 'Guacamaya Verde', 'Guacamayo Aliverde',
     'Guacamayo azuliamarillo', 'Guacamayo Severo', 'Hormiguerito Coicorita Norteño',
-    'Hormiguerito Coicorita Sureño', 'Hormiguerito Flanquialbo', 'Hormiguerito Leonado',
-    'Hormiguerito Plomizo', 'Hormiguero Azabache', 'Hormiguero Cantor', 'Hormiguero de Parker',
-    'Hormiguero Dorsicastaño', 'Hormiguero Guardarribera Oriental', 'Hormiguero Inmaculado',
-    'Hormiguero Sencillo', 'Hormiguero Ventriblanco', 'Lorito Amazonico', 'Lorito Cabecigualdo',
-    'Lorito de fuertes', 'Loro Alibronceado', 'Loro Cabeciazul', 'Loro Cachetes Amarillos',
-    'Loro Corona Azul', 'Loro Tumultuoso', 'Ojodefuego Occidental', 'Periquito Alas Amarillas',
-    'Periquito Australiano', 'Periquito Barrado', 'Tiluchí Colilargo', 'Tiluchí de Santander',
-    'Tiluchi Lomirrufo'
+    'Hormiguerito Coicorita Sureño', 'Hormiguerito Flanquialbo',
+    'Hormiguerito Leonado', 'Hormiguerito Plomizo', 'Hormiguero Azabache',
+    'Hormiguero Cantor', 'Hormiguero de Parker', 'Hormiguero Dorsicastaño',
+    'Hormiguero Guardarribera Oriental', 'Hormiguero Inmaculado',
+    'Hormiguero Sencillo', 'Hormiguero Ventriblanco', 'Lorito Amazonico',
+    'Lorito Cabecigualdo', 'Lorito de fuertes', 'Loro Alibronceado',
+    'Loro Cabeciazul', 'Loro Cachetes Amarillos', 'Loro Corona Azul',
+    'Loro Tumultuoso', 'Ojodefuego Occidental', 'Periquito Alas Amarillas',
+    'Periquito Australiano', 'Periquito Barrado', 'Tiluchí Colilargo',
+    'Tiluchí de Santander', 'Tiluchi Lomirrufo'
 ]
 
 # Función para descargar el modelo desde Google Drive
-def download_model():
-    """Descarga el modelo desde Google Drive si no existe localmente."""
-    if not os.path.exists(MODEL_PATH):
-        url = 'https://drive.google.com/uc?export=download&id=1WEZ60x_yPY-gPv8ugoq_qDLTSAD541zc'
-        print("Descargando modelo...")
-        try:
-            response = requests.get(url, stream=True)
-            response.raise_for_status()  # Lanza un error si la respuesta no es 200
-            with open(MODEL_PATH, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            print("Modelo descargado exitosamente.")
-        except requests.exceptions.RequestException as e:
-            print(f"Error al descargar el modelo: {e}")
-            return False
-    return True
-
-# Carga el modelo
-if download_model():
-    model = load_model(MODEL_PATH)
-else:
-    raise Exception("No se pudo descargar el modelo.")
+def download_file_from_google_drive(file_id, destination):
+    URL = f"https://drive.google.com/uc?id={file_id}"
+    response = requests.get(URL)
+    if response.status_code == 200:
+        with open(destination, 'wb') as f:
+            f.write(response.content)
+    else:
+        raise Exception(f"Error al descargar el archivo: {response.status_code}")
 
 # Ruta de subida de imágenes
 UPLOAD_FOLDER = 'static'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Descarga el modelo
+model_file_path = 'modelo/model_VGG16_v4.keras'
+if not os.path.exists(model_file_path):
+    download_file_from_google_drive('1WEZ60x_yPY-gPv8ugoq_qDLTSAD541zc', model_file_path)
+
+# Carga el modelo
+model = load_model(model_file_path)
 
 # Ruta principal
 @app.route("/", methods=["GET", "POST"])
