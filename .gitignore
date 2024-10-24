@@ -1,0 +1,8 @@
+# Ignorar entornos virtuales
+venv/
+__pycache__/
+
+# Ignorar modelos y archivos grandes
+modelo/*.keras
+*.pyd
+*.dll
