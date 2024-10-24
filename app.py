@@ -35,10 +35,13 @@ names = [
 # Función para descargar el modelo desde Google Drive
 def download_file_from_google_drive(file_id, destination):
     URL = f"https://drive.google.com/uc?id={file_id}"
-    response = requests.get(URL)
+    session = requests.Session()
+    response = session.get(URL, params={'confirm': 't'}, stream=True)
+
     if response.status_code == 200:
         with open(destination, 'wb') as f:
-            f.write(response.content)
+            for chunk in response.iter_content(chunk_size=32768):
+                f.write(chunk)
     else:
         raise Exception(f"Error al descargar el archivo: {response.status_code}")
 

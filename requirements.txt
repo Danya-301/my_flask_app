@@ -1,6 +1,5 @@
 Flask
-gunicorn
 numpy
-opencv-python-headless
-keras
+opencv-python
+tensorflow
 requests
