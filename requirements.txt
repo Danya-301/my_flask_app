@@ -1,5 +1,5 @@
 Flask
-gunicorn
 numpy
-opencv-python-headless
+opencv-python
 keras
+requests
