@@ -47,11 +47,22 @@ def home():
         img = np.expand_dims(img, axis=0)
         img = preprocess_input(img)
 
-        # Realiza la predicción
-        preds = model.predict(img)
-        predicted_class_index = np.argmax(preds)
-        predicted_class_name = names[predicted_class_index]
-        confidence_percentage = preds[0][predicted_class_index] * 100
+        try:
+            # Realiza la predicción
+            preds = model.predict(img)
+            predicted_class_index = np.argmax(preds)
+
+            # Asegúrate de que el índice esté dentro del rango
+            if 0 <= predicted_class_index < len(names):
+                predicted_class_name = names[predicted_class_index]
+                confidence_percentage = preds[0][predicted_class_index] * 100
+            else:
+                predicted_class_name = "Clase desconocida"
+                confidence_percentage = 0.0
+        except Exception as e:
+            return render_template("index.html", 
+                                   prediction="Error en la predicción", 
+                                   confidence="0.00")
 
         # Renderiza el resultado
         return render_template("index.html", 
@@ -63,6 +74,4 @@ def home():
 
 # Corre la aplicación
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Usar puerto de Render si está disponible
-    app.run(host="0.0.0.0", port=port, debug=True)
-
+    app.run(debug=True)
