@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template
 from keras.applications.imagenet_utils import preprocess_input
 from keras.models import load_model
 import numpy as np
@@ -25,7 +25,7 @@ names = ['Amazona Alinaranja', 'Amazona de San Vicente', 'Amazona Mercenaria', '
          'Periquito Australiano', 'Periquito Barrado', 'Tiluchí Colilargo', 'Tiluchí de Santander',
          'Tiluchi Lomirrufo']
 
-# Carga el modelo
+# Carga el modelo una sola vez
 model = load_model('modelo/model_VGG16_v4.keras')
 
 # Ruta de subida de imágenes
@@ -37,37 +37,39 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def home():
     if request.method == "POST":
         # Obtiene la imagen subida
-        image = request.files["image"]
-        image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'uploaded_image.jpg')
-        image.save(image_path)
+        image = request.files.get("image")
+        
+        if image:
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'uploaded_image.jpg')
+            image.save(image_path)
 
-        # Procesa la imagen
-        img = cv2.imread(image_path)
-        img = cv2.resize(img, (224, 224))  # Ajusta al tamaño esperado por VGG16
-        img = np.expand_dims(img, axis=0)
-        img = preprocess_input(img)
+            # Procesa la imagen
+            try:
+                img = cv2.imread(image_path)
+                img = cv2.resize(img, (224, 224))  # Ajusta al tamaño esperado por VGG16
+                img = np.expand_dims(img, axis=0)
+                img = preprocess_input(img)
 
-        try:
-            # Realiza la predicción
-            preds = model.predict(img)
-            predicted_class_index = np.argmax(preds)
+                # Realiza la predicción
+                preds = model.predict(img)
+                predicted_class_index = np.argmax(preds)
 
-            # Asegúrate de que el índice esté dentro del rango
-            if 0 <= predicted_class_index < len(names):
-                predicted_class_name = names[predicted_class_index]
-                confidence_percentage = preds[0][predicted_class_index] * 100
-            else:
-                predicted_class_name = "Clase desconocida"
-                confidence_percentage = 0.0
-        except Exception as e:
-            return render_template("index.html", 
-                                   prediction="Error en la predicción", 
-                                   confidence="0.00")
+                # Asegúrate de que el índice esté dentro del rango
+                if 0 <= predicted_class_index < len(names):
+                    predicted_class_name = names[predicted_class_index]
+                    confidence_percentage = preds[0][predicted_class_index] * 100
+                else:
+                    predicted_class_name = "Clase desconocida"
+                    confidence_percentage = 0.0
 
-        # Renderiza el resultado
-        return render_template("index.html", 
-                               prediction=predicted_class_name, 
-                               confidence=f"{confidence_percentage:.2f}")
+                # Renderiza el resultado
+                return render_template("index.html", 
+                                       prediction=predicted_class_name, 
+                                       confidence=f"{confidence_percentage:.2f}")
+            except Exception as e:
+                return render_template("index.html", 
+                                       prediction="Error en la predicción", 
+                                       confidence="0.00")
 
     # Si es una solicitud GET, renderiza la interfaz inicial
     return render_template("index.html")
